@@ -42,6 +42,12 @@ importers:
         specifier: workspace:*
         version: link:../config
 
+  packages/db:
+    devDependencies:
+      '@cxedu/config':
+        specifier: workspace:*
+        version: link:../config
+
   packages/ui-tokens:
     devDependencies:
       '@cxedu/config':
