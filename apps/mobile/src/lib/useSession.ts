@@ -1,20 +1,17 @@
-import { useEffect, useState } from "react";
-import type { Session } from "@supabase/supabase-js";
+import { useEffect, useSyncExternalStore } from "react";
 
-import { supabase } from "./supabase";
+import { session } from "./cx";
+
+let restoring: Promise<void> | null = null;
 
 export const useSession = () => {
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const state = useSyncExternalStore(
+    session.subscribe,
+    session.get,
+    session.get,
+  );
   useEffect(() => {
-    void supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setLoading(false);
-    });
-    const { data } = supabase.auth.onAuthStateChange((_event, next) =>
-      setSession(next),
-    );
-    return () => data.subscription.unsubscribe();
+    restoring ??= session.restore();
   }, []);
-  return { session, loading };
+  return state;
 };

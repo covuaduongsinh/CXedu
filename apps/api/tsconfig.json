@@ -1,0 +1,8 @@
+{
+  "extends": "@cxedu/config/tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM"],
+    "types": ["node"]
+  },
+  "include": ["src", "test"]
+}

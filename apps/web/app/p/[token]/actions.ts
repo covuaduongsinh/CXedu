@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 
-import { createSupabaseServer } from "@/lib/supabase/server";
+import { createCxServer } from "@/lib/cx/server";
 
 export interface PortalData {
   student: {
@@ -61,13 +61,13 @@ export async function openPortal(
   if (!token.success) return { error: "Link không hợp lệ" };
   if (!suffix.success)
     return { error: "Nhập đúng 4 số cuối điện thoại phụ huynh" };
-  const supabase = await createSupabaseServer();
-  const { data, error } = await supabase.rpc("get_parent_portal", {
+  const db = await createCxServer();
+  const { data, error } = await db.rpc("get_parent_portal", {
     p_token: token.data,
     p_phone_suffix: suffix.data,
   });
   if (error) return { error: "Không mở được thông tin, vui lòng thử lại" };
   if (!data) return { error: "Thông tin xác minh chưa đúng" };
-  await supabase.rpc("touch_parent_portal", { p_token: token.data });
+  await db.rpc("touch_parent_portal", { p_token: token.data });
   return { data: data as unknown as PortalData };
 }

@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import { createSupabaseServer } from "@/lib/supabase/server";
+import { createCxServer } from "@/lib/cx/server";
 
 const schema = z.object({
   name: z.string().trim().min(2, "Nhập tên trung tâm/CLB").max(120),
@@ -19,8 +19,8 @@ export async function createOrganization(
     return {
       error: parsed.error.issues[0]?.message ?? "Thông tin chưa hợp lệ",
     };
-  const supabase = await createSupabaseServer();
-  const { error } = await supabase.rpc("create_organization", {
+  const db = await createCxServer();
+  const { error } = await db.rpc("create_organization", {
     p_name: parsed.data.name,
     ...(parsed.data.centerName
       ? { p_center_name: parsed.data.centerName }

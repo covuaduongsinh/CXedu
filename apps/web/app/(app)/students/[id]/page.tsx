@@ -15,7 +15,7 @@ import {
 } from "@/components/ui";
 import { env } from "@/lib/env";
 import { getAppContext } from "@/lib/session";
-import { createSupabaseServer } from "@/lib/supabase/server";
+import { createCxServer } from "@/lib/cx/server";
 
 import { addReview, createEnrollment, updateStudent } from "../../actions";
 import { EnrollmentFields } from "./EnrollmentFields";
@@ -38,7 +38,7 @@ export default async function StudentPage({
 }) {
   const { id } = await params;
   const context = await getAppContext();
-  const supabase = await createSupabaseServer();
+  const db = await createCxServer();
   const [
     { data: student },
     { data: enrollments },
@@ -48,35 +48,35 @@ export default async function StudentPage({
     { data: courses },
     { data: slots },
   ] = await Promise.all([
-    supabase.from("students").select("*").eq("id", id).maybeSingle(),
-    supabase
+    db.from("students").select("*").eq("id", id).maybeSingle(),
+    db
       .from("enrollments")
       .select("*, course:courses(name, chess_level)")
       .eq("student_id", id)
       .order("start_date", { ascending: false }),
-    supabase
+    db
       .from("attendance")
       .select("id, session_date, status, kind, charged")
       .eq("student_id", id)
       .order("session_date", { ascending: false })
       .limit(30),
-    supabase
+    db
       .from("level_history")
       .select("*")
       .eq("student_id", id)
       .order("changed_on"),
-    supabase
+    db
       .from("student_reviews")
       .select("id, body, created_at")
       .eq("student_id", id)
       .order("created_at", { ascending: false }),
-    supabase
+    db
       .from("courses")
       .select("id, name, total_lessons, price")
       .eq("org_id", context.org.id)
       .eq("active", true)
       .order("chess_level"),
-    supabase
+    db
       .from("class_slots")
       .select("id, name, weekday, start_time, course_id")
       .eq("center_id", context.center.id)

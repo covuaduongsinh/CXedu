@@ -12,14 +12,14 @@ import {
   buttonClass,
 } from "@/components/ui";
 import { getAppContext } from "@/lib/session";
-import { createSupabaseServer } from "@/lib/supabase/server";
+import { createCxServer } from "@/lib/cx/server";
 
 export const metadata: Metadata = { title: "Tổng quan" };
 
 export default async function DashboardPage() {
   const context = await getAppContext();
-  const supabase = await createSupabaseServer();
-  const data = await fetchDashboard(supabase, context.org.id);
+  const db = await createCxServer();
+  const data = await fetchDashboard(db, context.org.id);
   return (
     <>
       <PageHeader

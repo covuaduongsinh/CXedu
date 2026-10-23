@@ -1,60 +1,50 @@
-import { createClient } from "@supabase/supabase-js";
+import pg from "pg";
 import { expect, test } from "@playwright/test";
 import { todayIn, weekdayOf } from "@cxedu/core";
 
 /**
  * Đồng bộ đa nền tảng: giáo viên điểm danh trên app mobile (bản Expo web),
- * màn hình điểm danh trên web Next.js cập nhật qua Supabase Realtime, không cần tải lại.
- * Cần: E2E_MOBILE_URL (bản `expo export --platform web` đang chạy) và E2E_SUPABASE_SERVICE_ROLE_KEY.
+ * màn hình điểm danh trên web Next.js cập nhật qua realtime của CX API, không cần tải lại.
+ * Cần: E2E_MOBILE_URL (bản `expo export --platform web` đang chạy) và E2E_DATABASE_URL.
  */
 
 const MOBILE_URL = process.env.E2E_MOBILE_URL;
-const SERVICE_KEY = process.env.E2E_SUPABASE_SERVICE_ROLE_KEY;
-const SUPABASE_URL =
-  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "http://127.0.0.1:54321";
+const DATABASE_URL = process.env.E2E_DATABASE_URL;
 const ORG = "a0000000-0000-4000-8000-000000000001";
 const CENTER = "c0000000-0000-4000-8000-000000000001";
 const STUDENT_NAME = "Trần Gia Bảo";
 
 test.skip(
-  !MOBILE_URL || !SERVICE_KEY,
-  "Cần E2E_MOBILE_URL và E2E_SUPABASE_SERVICE_ROLE_KEY",
+  !MOBILE_URL || !DATABASE_URL,
+  "Cần E2E_MOBILE_URL và E2E_DATABASE_URL",
 );
 
 test("điểm danh trên mobile hiện ngay trên web", async ({ browser }) => {
-  const admin = createClient(SUPABASE_URL, SERVICE_KEY ?? "", {
-    auth: { persistSession: false },
-  });
+  const db = new pg.Client({ connectionString: DATABASE_URL });
+  await db.connect();
   const today = todayIn();
-  const { data: enrollment } = await admin
-    .from("enrollments")
-    .select("id, student_id, students!inner(full_name)")
-    .eq("students.full_name", STUDENT_NAME)
-    .single();
-  expect(enrollment).not.toBeNull();
+  const {
+    rows: [enrollment],
+  } = await db.query<{ id: string; student_id: string }>(
+    "select e.id, e.student_id from enrollments e join students s on s.id = e.student_id where s.full_name = $1 limit 1",
+    [STUDENT_NAME],
+  );
+  expect(enrollment).toBeDefined();
   // Lớp chạy đúng thứ hôm nay để cả hai màn hình cùng hiển thị.
-  const { data: slot } = await admin
-    .from("class_slots")
-    .insert({
-      org_id: ORG,
-      center_id: CENTER,
-      name: "Lớp đồng bộ E2E",
-      weekday: weekdayOf(today),
-      start_time: "06:00",
-      end_time: "07:00",
-    })
-    .select("id")
-    .single();
-  await admin.from("enrollment_schedules").insert({
-    enrollment_id: enrollment?.id,
-    class_slot_id: slot?.id,
-    org_id: ORG,
-  });
-  await admin
-    .from("attendance")
-    .delete()
-    .eq("enrollment_id", enrollment?.id ?? "")
-    .eq("session_date", today);
+  const {
+    rows: [slot],
+  } = await db.query<{ id: string }>(
+    "insert into class_slots (org_id, center_id, name, weekday, start_time, end_time) values ($1, $2, 'Lớp đồng bộ E2E', $3, '06:00', '07:00') returning id",
+    [ORG, CENTER, weekdayOf(today)],
+  );
+  await db.query(
+    "insert into enrollment_schedules (enrollment_id, class_slot_id, org_id) values ($1, $2, $3)",
+    [enrollment?.id, slot?.id, ORG],
+  );
+  await db.query(
+    "delete from attendance where enrollment_id = $1 and session_date = $2",
+    [enrollment?.id, today],
+  );
 
   try {
     const webContext = await browser.newContext();
@@ -89,20 +79,17 @@ test("điểm danh trên mobile hiện ngay trên web", async ({ browser }) => {
       }),
     ).toBeVisible();
 
-    // Web nhận thay đổi qua Realtime (không reload).
+    // Web nhận thay đổi qua realtime (không reload).
     await expect(webCard).toHaveAttribute("aria-pressed", "true", {
       timeout: 10_000,
     });
     await expect(webCard).toContainText("Có mặt");
   } finally {
-    await admin
-      .from("attendance")
-      .delete()
-      .eq("enrollment_id", enrollment?.id ?? "")
-      .eq("session_date", today);
-    await admin
-      .from("class_slots")
-      .delete()
-      .eq("id", slot?.id ?? "");
+    await db.query(
+      "delete from attendance where enrollment_id = $1 and session_date = $2",
+      [enrollment?.id, today],
+    );
+    await db.query("delete from class_slots where id = $1", [slot?.id]);
+    await db.end();
   }
 });

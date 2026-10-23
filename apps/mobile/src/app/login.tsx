@@ -11,7 +11,7 @@ import {
 import { router } from "expo-router";
 import { brand } from "@cxedu/ui-tokens";
 
-import { supabase } from "@/lib/supabase";
+import { session } from "@/lib/cx";
 import { colors, space, ui } from "@/lib/theme";
 
 export default function LoginScreen() {
@@ -23,12 +23,9 @@ export default function LoginScreen() {
   const signIn = async () => {
     setPending(true);
     setError(null);
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
+    const ok = await session.signIn(email.trim(), password).catch(() => false);
     setPending(false);
-    if (authError) setError("Email hoặc mật khẩu chưa đúng");
+    if (!ok) setError("Email hoặc mật khẩu chưa đúng");
     else router.replace("/");
   };
 

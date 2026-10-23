@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { unwrapRows } from "@cxedu/api";
 
-import { supabase } from "./supabase";
+import { cx } from "./cx";
 
 /** Tổ chức + cơ sở đầu tiên mà người dùng được phân công (chọn cơ sở khác ở bản sau). */
 export const useWorkspace = (userId: string | undefined) =>
@@ -10,7 +10,7 @@ export const useWorkspace = (userId: string | undefined) =>
     enabled: Boolean(userId),
     queryFn: async () => {
       const memberships = unwrapRows(
-        await supabase
+        await cx
           .from("memberships")
           .select("role, org:organizations(id, name, timezone)")
           .eq("user_id", userId ?? ""),
@@ -18,7 +18,7 @@ export const useWorkspace = (userId: string | undefined) =>
       const membership = memberships[0];
       if (!membership?.org) return null;
       const centers = unwrapRows(
-        await supabase
+        await cx
           .from("centers")
           .select("id, name")
           .eq("org_id", membership.org.id)

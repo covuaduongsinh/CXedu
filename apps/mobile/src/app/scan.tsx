@@ -4,7 +4,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { router } from "expo-router";
 import { parseCheckinQrPayload } from "@cxedu/core";
 
-import { supabase } from "@/lib/supabase";
+import { cx } from "@/lib/cx";
 import { colors, space, ui } from "@/lib/theme";
 
 /** Giáo viên quét mã QR xoay vòng ở lễ tân để check-in ca dạy. */
@@ -21,7 +21,7 @@ export default function ScanScreen() {
       return;
     }
     setBusy(true);
-    const { error } = await supabase.rpc("teacher_checkin", {
+    const { error } = await cx.rpc("teacher_checkin", {
       p_center_id: parsed.centerId,
       p_code: parsed.code,
     });

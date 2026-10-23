@@ -11,7 +11,7 @@ import type { AttendanceStatus } from "@cxedu/core";
 
 import { LevelBadge } from "@/components/LevelBadge";
 import { Card, Empty, cx } from "@/components/ui";
-import { getSupabaseBrowser } from "@/lib/supabase/browser";
+import { getCxBrowser } from "@/lib/cx/browser";
 
 const STATUS_STYLES: Record<AttendanceStatus, string> = {
   present: "bg-green text-white ring-green",
@@ -33,7 +33,7 @@ interface Props {
 }
 
 export const AttendanceBoard = ({ centerId, orgId, date, today }: Props) => {
-  const client = getSupabaseBrowser();
+  const client = getCxBrowser();
   const router = useRouter();
   const sessions = useTodaySessions(client, centerId, date);
   const toggle = useToggleAttendance(client, centerId, date);

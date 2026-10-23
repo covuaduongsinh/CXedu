@@ -22,9 +22,9 @@ apps/mobile/android/
 apps/desktop/src-tauri/target/
 apps/desktop/src-tauri/gen/
 
-# Supabase
-supabase/.temp/
-supabase/.branches/
+# Database
+database/.temp/
+database/.branches/
 
 # Playwright
 test-results/

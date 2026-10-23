@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Tables } from "@cxedu/db";
 
-import { createSupabaseServer } from "./supabase/server";
+import { createCxServer, getServerSession } from "./cx/server";
 
 export const ORG_COOKIE = "cx_org";
 export const CENTER_COOKIE = "cx_center";
@@ -22,13 +22,12 @@ export interface AppContext {
 
 /** Ngữ cảnh làm việc: người dùng, tổ chức đang chọn, cơ sở đang chọn. */
 export const getAppContext = cache(async (): Promise<AppContext> => {
-  const supabase = await createSupabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const session = await getServerSession();
+  if (!session) redirect("/login");
+  const { user } = session;
+  const db = await createCxServer();
 
-  const { data: memberships } = await supabase
+  const { data: memberships } = await db
     .from("memberships")
     .select("role, org:organizations(*)")
     .eq("user_id", user.id);
@@ -41,7 +40,7 @@ export const getAppContext = cache(async (): Promise<AppContext> => {
   const org = membership?.org;
   if (!membership || !org) redirect("/onboarding");
 
-  const { data: centers } = await supabase
+  const { data: centers } = await db
     .from("centers")
     .select("*")
     .eq("org_id", org.id)
@@ -53,7 +52,7 @@ export const getAppContext = cache(async (): Promise<AppContext> => {
 
   return {
     userId: user.id,
-    email: user.email ?? null,
+    email: user.email,
     org,
     role: membership.role,
     isAdmin: membership.role !== "teacher",

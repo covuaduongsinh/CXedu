@@ -376,7 +376,7 @@ $$;
 grant execute on function public.touch_parent_portal(text) to anon, authenticated;
 
 -- ---------------------------------------------------------------------------
--- Nhắc hằng ngày → outbox (chạy bằng pg_cron lúc 07:00 giờ VN = 00:00 UTC).
+-- Nhắc hằng ngày → outbox (CX API lên lịch bằng pg-boss lúc 07:00 giờ VN).
 -- ---------------------------------------------------------------------------
 
 create or replace function public.enqueue_daily_notifications(p_today date default (now() at time zone 'Asia/Ho_Chi_Minh')::date)
@@ -422,19 +422,42 @@ $$;
 
 revoke execute on function public.enqueue_daily_notifications(date) from public, anon, authenticated;
 
-do $$
+-- ---------------------------------------------------------------------------
+-- Realtime: mỗi thay đổi phát pg_notify('cx_change'); CX API chuyển tiếp qua WebSocket
+-- tới web / mobile / desktop đang theo dõi đúng tổ chức và cơ sở.
+-- ---------------------------------------------------------------------------
+
+create or replace function public.tg_notify_change()
+returns trigger
+language plpgsql security definer set search_path = ''
+as $$
+declare
+  v_row jsonb := to_jsonb(coalesce(new, old));
 begin
-  create extension if not exists pg_cron;
-  perform cron.schedule('cxedu-daily-notifications', '0 0 * * *', 'select public.enqueue_daily_notifications()');
-exception when others then
-  raise notice 'pg_cron chưa sẵn sàng: %', sqlerrm;
+  perform pg_notify('cx_change', jsonb_build_object(
+    'table', tg_table_name,
+    'op', lower(tg_op),
+    'org_id', v_row ->> 'org_id',
+    'center_id', v_row ->> 'center_id',
+    'id', v_row ->> 'id'
+  )::text);
+  return null;
 end;
 $$;
 
--- ---------------------------------------------------------------------------
--- Realtime: đồng bộ web / mobile / desktop.
--- ---------------------------------------------------------------------------
+revoke execute on function public.tg_notify_change() from public, anon, authenticated;
 
-alter publication supabase_realtime add table
-  public.attendance, public.enrollments, public.students, public.invoices, public.payments,
-  public.renewal_followups, public.teacher_checkins;
+create trigger notify_attendance after insert or update or delete on public.attendance
+  for each row execute function public.tg_notify_change();
+create trigger notify_enrollments after insert or update or delete on public.enrollments
+  for each row execute function public.tg_notify_change();
+create trigger notify_students after insert or update or delete on public.students
+  for each row execute function public.tg_notify_change();
+create trigger notify_invoices after insert or update or delete on public.invoices
+  for each row execute function public.tg_notify_change();
+create trigger notify_payments after insert or update or delete on public.payments
+  for each row execute function public.tg_notify_change();
+create trigger notify_renewal_followups after insert or update or delete on public.renewal_followups
+  for each row execute function public.tg_notify_change();
+create trigger notify_teacher_checkins after insert or update or delete on public.teacher_checkins
+  for each row execute function public.tg_notify_change();

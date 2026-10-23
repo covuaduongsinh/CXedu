@@ -14,7 +14,7 @@ import {
   Select,
 } from "@/components/ui";
 import { getAppContext } from "@/lib/session";
-import { createSupabaseServer } from "@/lib/supabase/server";
+import { createCxServer } from "@/lib/cx/server";
 
 import { createStudent } from "../actions";
 
@@ -33,8 +33,8 @@ export default async function StudentsPage({
 }) {
   const context = await getAppContext();
   const { q, status } = await searchParams;
-  const supabase = await createSupabaseServer();
-  let query = supabase
+  const db = await createCxServer();
+  let query = db
     .from("v_student_remaining")
     .select(
       "student_id, full_name, parent_name, parent_phone, chess_level, remaining_lessons, active_enrollments",
@@ -44,10 +44,7 @@ export default async function StudentsPage({
   if (q) query = query.ilike("full_name", `%${q}%`);
   const [{ data: rows }, { data: statuses }] = await Promise.all([
     query,
-    supabase
-      .from("students")
-      .select("id, status")
-      .eq("center_id", context.center.id),
+    db.from("students").select("id, status").eq("center_id", context.center.id),
   ]);
   const statusById = new Map(
     (statuses ?? []).map((row) => [row.id, row.status]),

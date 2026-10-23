@@ -15,25 +15,25 @@ import {
 import { todayIn } from "@cxedu/core";
 
 import { StudentTile } from "@/components/StudentTile";
-import { supabase } from "@/lib/supabase";
+import { cx, session as auth } from "@/lib/cx";
 import { colors, space, ui } from "@/lib/theme";
 import { useSession } from "@/lib/useSession";
 import { useWorkspace } from "@/lib/useWorkspace";
 
 export default function TodayScreen() {
-  const { session, loading } = useSession();
-  const workspace = useWorkspace(session?.user.id);
+  const { user, loading } = useSession();
+  const workspace = useWorkspace(user?.id);
   const centerId = workspace.data?.center?.id ?? null;
   const date = todayIn(workspace.data?.org.timezone ?? "Asia/Ho_Chi_Minh");
-  const sessions = useTodaySessions(supabase, centerId, date);
-  const toggle = useToggleAttendance(supabase, centerId ?? "", date);
-  useRealtimeSync(supabase, centerId, workspace.data?.org.id ?? null);
+  const sessions = useTodaySessions(cx, centerId, date);
+  const toggle = useToggleAttendance(cx, centerId ?? "", date);
+  useRealtimeSync(cx, centerId, workspace.data?.org.id ?? null);
 
   if (loading)
     return (
       <ActivityIndicator style={{ marginTop: 48 }} color={colors.primary} />
     );
-  if (!session) return <Redirect href="/login" />;
+  if (!user) return <Redirect href="/login" />;
 
   return (
     <ScrollView
@@ -108,7 +108,7 @@ export default function TodayScreen() {
       ))}
 
       <Pressable
-        onPress={() => void supabase.auth.signOut()}
+        onPress={() => void auth.signOut()}
         style={{ alignItems: "center", padding: space.md }}
       >
         <Text style={ui.muted}>Đăng xuất</Text>

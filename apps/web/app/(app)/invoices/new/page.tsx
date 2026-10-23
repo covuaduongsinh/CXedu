@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { ActionForm } from "@/components/ActionForm";
 import { Card, Field, Input, PageHeader, Select } from "@/components/ui";
 import { requireAdmin } from "@/lib/session";
-import { createSupabaseServer } from "@/lib/supabase/server";
+import { createCxServer } from "@/lib/cx/server";
 
 import { createInvoice } from "../../actions";
 import { InvoiceLines } from "./InvoiceLines";
@@ -17,16 +17,16 @@ export default async function NewInvoicePage({
 }) {
   const context = await requireAdmin();
   const { studentId } = await searchParams;
-  const supabase = await createSupabaseServer();
+  const db = await createCxServer();
   const [{ data: students }, { data: latest }] = await Promise.all([
-    supabase
+    db
       .from("students")
       .select("id, full_name")
       .eq("center_id", context.center.id)
       .neq("status", "stopped")
       .order("full_name"),
     studentId
-      ? supabase
+      ? db
           .from("enrollments")
           .select(
             "total_lessons, price, course:courses(name, total_lessons, price)",

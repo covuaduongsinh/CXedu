@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { checkinQrPayload } from "@cxedu/core";
 
-import { getSupabaseBrowser } from "@/lib/supabase/browser";
+import { getCxBrowser } from "@/lib/cx/browser";
 
 export const KioskQr = ({ centerId }: { centerId: string }) => {
   const [svg, setSvg] = useState<string | null>(null);
@@ -21,7 +21,7 @@ export const KioskQr = ({ centerId }: { centerId: string }) => {
     if (now < expiresAt) return;
     let cancelled = false;
     void (async () => {
-      const { data, error: rpcError } = await getSupabaseBrowser().rpc(
+      const { data, error: rpcError } = await getCxBrowser().rpc(
         "current_checkin_code",
         { p_center_id: centerId },
       );

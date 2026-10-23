@@ -4,8 +4,8 @@ create extension if not exists pgtap with schema extensions;
 select plan(23);
 
 -- Người dùng của một trung tâm khác.
-insert into auth.users (id, email, aud, role) values
-  ('33333333-3333-4333-8333-333333333333', 'chu.trung.tam.khac@cxedu.local', 'authenticated', 'authenticated');
+insert into auth.users ("id", "name", "email") values
+  ('33333333-3333-4333-8333-333333333333', 'Chủ trung tâm khác', 'chu.trung.tam.khac@cxedu.local');
 
 create temporary table ids on commit drop as
 select

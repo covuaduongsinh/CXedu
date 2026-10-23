@@ -13,7 +13,7 @@ import { Logo } from "@/components/Logo";
 import { QrSvg } from "@/components/QrSvg";
 import { Badge, Card, Field, Input, Select } from "@/components/ui";
 import { requireAdmin } from "@/lib/session";
-import { createSupabaseServer } from "@/lib/supabase/server";
+import { createCxServer } from "@/lib/cx/server";
 
 import { recordPayment } from "../../actions";
 import { PrintButton } from "./PrintButton";
@@ -30,26 +30,22 @@ export default async function InvoicePage({
 }) {
   const { id } = await params;
   const context = await requireAdmin();
-  const supabase = await createSupabaseServer();
+  const db = await createCxServer();
   const [{ data: invoice }, { data: lines }, { data: payments }] =
     await Promise.all([
-      supabase
+      db
         .from("invoices")
         .select(
           "*, student:students(full_name, parent_name, parent_phone), center:centers(*)",
         )
         .eq("id", id)
         .maybeSingle(),
-      supabase
+      db
         .from("invoice_lines")
         .select("*")
         .eq("invoice_id", id)
         .order("position"),
-      supabase
-        .from("payments")
-        .select("*")
-        .eq("invoice_id", id)
-        .order("paid_at"),
+      db.from("payments").select("*").eq("invoice_id", id).order("paid_at"),
     ]);
   if (!invoice) notFound();
   const balance = Math.max(invoice.total - invoice.paid_amount, 0);

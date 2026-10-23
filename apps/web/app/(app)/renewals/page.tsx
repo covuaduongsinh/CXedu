@@ -4,7 +4,7 @@ import { RENEWAL_STAGE_LABELS, renewalStage } from "@cxedu/core";
 
 import { Badge, Card, Empty, PageHeader, buttonClass } from "@/components/ui";
 import { requireAdmin } from "@/lib/session";
-import { createSupabaseServer } from "@/lib/supabase/server";
+import { createCxServer } from "@/lib/cx/server";
 
 import { updateFollowup } from "../actions";
 
@@ -19,8 +19,8 @@ const STAGE_TONE = {
 
 export default async function RenewalsPage() {
   const context = await requireAdmin();
-  const supabase = await createSupabaseServer();
-  const { data: rows } = await supabase
+  const db = await createCxServer();
+  const { data: rows } = await db
     .from("v_low_remaining")
     .select("*")
     .eq("org_id", context.org.id)

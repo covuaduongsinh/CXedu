@@ -4,7 +4,7 @@ import { VIETQR_BANKS } from "@cxedu/core";
 import { ActionForm } from "@/components/ActionForm";
 import { Card, Field, Input, PageHeader, Select } from "@/components/ui";
 import { requireAdmin } from "@/lib/session";
-import { createSupabaseServer } from "@/lib/supabase/server";
+import { createCxServer } from "@/lib/cx/server";
 
 import { updateSettings } from "../actions";
 
@@ -12,8 +12,8 @@ export const metadata: Metadata = { title: "Cài đặt" };
 
 export default async function SettingsPage() {
   const context = await requireAdmin();
-  const supabase = await createSupabaseServer();
-  const { data: subscription } = await supabase
+  const db = await createCxServer();
+  const { data: subscription } = await db
     .from("subscriptions")
     .select("*")
     .eq("org_id", context.org.id)

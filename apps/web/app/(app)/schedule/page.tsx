@@ -4,7 +4,7 @@ import { WEEKDAY_LABELS } from "@cxedu/core";
 import { ActionForm } from "@/components/ActionForm";
 import { Card, Empty, Field, Input, PageHeader, Select } from "@/components/ui";
 import { requireAdmin } from "@/lib/session";
-import { createSupabaseServer } from "@/lib/supabase/server";
+import { createCxServer } from "@/lib/cx/server";
 
 import { createClassSlot } from "../actions";
 
@@ -14,14 +14,14 @@ const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
 export default async function SchedulePage() {
   const context = await requireAdmin();
-  const supabase = await createSupabaseServer();
+  const db = await createCxServer();
   const [
     { data: slots },
     { data: courses },
     { data: rooms },
     { data: members },
   ] = await Promise.all([
-    supabase
+    db
       .from("class_slots")
       .select(
         "*, course:courses(name), room:rooms(name), enrollment_schedules(enrollment_id)",
@@ -29,16 +29,13 @@ export default async function SchedulePage() {
       .eq("center_id", context.center.id)
       .eq("active", true)
       .order("start_time"),
-    supabase
+    db
       .from("courses")
       .select("id, name")
       .eq("org_id", context.org.id)
       .order("chess_level"),
-    supabase
-      .from("rooms")
-      .select("id, name")
-      .eq("center_id", context.center.id),
-    supabase
+    db.from("rooms").select("id, name").eq("center_id", context.center.id),
+    db
       .from("memberships")
       .select("user_id, display_name, role")
       .eq("org_id", context.org.id),

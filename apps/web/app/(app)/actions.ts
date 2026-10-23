@@ -12,7 +12,7 @@ import {
 } from "@cxedu/core";
 
 import { getAppContext, requireAdmin } from "@/lib/session";
-import { createSupabaseServer } from "@/lib/supabase/server";
+import { createCxServer } from "@/lib/cx/server";
 
 export interface ActionState {
   error?: string;
@@ -45,8 +45,8 @@ export async function createStudent(
       centerId: context.center.id,
       birthday: form.get("birthday") || null,
     });
-    const supabase = await createSupabaseServer();
-    const { data, error } = await supabase
+    const db = await createCxServer();
+    const { data, error } = await db
       .from("students")
       .insert({
         org_id: context.org.id,
@@ -94,11 +94,8 @@ export async function updateStudent(
         rating: form.get("rating"),
         parent_phone: (form.get("parentPhone") as string | null) || null,
       });
-    const supabase = await createSupabaseServer();
-    const { error } = await supabase
-      .from("students")
-      .update(patch)
-      .eq("id", id);
+    const db = await createCxServer();
+    const { error } = await db.from("students").update(patch).eq("id", id);
     if (error) return { error: error.message };
     revalidatePath(`/students/${id}`);
     return { ok: "Đã lưu" };
@@ -121,8 +118,8 @@ export async function createCourse(
           ? null
           : form.get("maxExcusedAbsences"),
     });
-    const supabase = await createSupabaseServer();
-    const { error } = await supabase.from("courses").insert({
+    const db = await createCxServer();
+    const { error } = await db.from("courses").insert({
       org_id: context.org.id,
       name: input.name,
       chess_level: input.chessLevel ?? null,
@@ -173,8 +170,8 @@ export async function createClassSlot(
       roomId: emptyToNull(form.get("roomId")),
       teacherId: emptyToNull(form.get("teacherId")),
     });
-    const supabase = await createSupabaseServer();
-    const { error } = await supabase.from("class_slots").insert({
+    const db = await createCxServer();
+    const { error } = await db.from("class_slots").insert({
       org_id: context.org.id,
       center_id: context.center.id,
       name: input.name,
@@ -202,18 +199,18 @@ export async function createEnrollment(
     const context = await requireAdmin();
     const slotIds = form.getAll("slotIds").map(String).filter(Boolean);
     const input = enrollmentInputSchema.parse(formObject(form));
-    const supabase = await createSupabaseServer();
+    const db = await createCxServer();
     const [{ data: course }, { data: slots }, { data: closures }] =
       await Promise.all([
-        supabase
+        db
           .from("courses")
           .select("price, total_lessons")
           .eq("id", input.courseId)
           .single(),
         slotIds.length
-          ? supabase.from("class_slots").select("weekday").in("id", slotIds)
+          ? db.from("class_slots").select("weekday").in("id", slotIds)
           : Promise.resolve({ data: [] as { weekday: number }[] }),
-        supabase
+        db
           .from("center_closures")
           .select("start_date, end_date")
           .eq("org_id", context.org.id),
@@ -230,7 +227,7 @@ export async function createEnrollment(
     const price = form.get("price")
       ? Number(form.get("price"))
       : (course?.price ?? 0);
-    const { data: enrollment, error } = await supabase
+    const { data: enrollment, error } = await db
       .from("enrollments")
       .insert({
         org_id: context.org.id,
@@ -245,7 +242,7 @@ export async function createEnrollment(
       .single();
     if (error) return { error: error.message };
     if (slotIds.length) {
-      const { error: scheduleError } = await supabase
+      const { error: scheduleError } = await db
         .from("enrollment_schedules")
         .insert(
           slotIds.map((slotId) => ({
@@ -280,8 +277,8 @@ export async function addReview(
       .min(1, "Nhập nhận xét")
       .max(4000)
       .parse(form.get("body"));
-    const supabase = await createSupabaseServer();
-    const { error } = await supabase.from("student_reviews").insert({
+    const db = await createCxServer();
+    const { error } = await db.from("student_reviews").insert({
       org_id: context.org.id,
       student_id: studentId,
       author_id: context.userId,
@@ -303,8 +300,8 @@ export async function updateFollowup(form: FormData) {
     .parse(form.get("field"));
   const value = form.get("value") === "true";
   const note = (form.get("note") as string | null) ?? undefined;
-  const supabase = await createSupabaseServer();
-  await supabase.from("renewal_followups").upsert(
+  const db = await createCxServer();
+  await db.from("renewal_followups").upsert(
     {
       student_id: studentId,
       org_id: context.org.id,
@@ -353,8 +350,8 @@ export async function createInvoice(
       }))
       .filter((line) => line.description && line.unit_price >= 0);
     if (lines.length === 0) return { error: "Hóa đơn cần ít nhất 1 dòng" };
-    const supabase = await createSupabaseServer();
-    const { data, error } = await supabase.rpc("create_invoice", {
+    const db = await createCxServer();
+    const { data, error } = await db.rpc("create_invoice", {
       p_center_id: context.center.id,
       ...(input.studentId ? { p_student_id: input.studentId } : {}),
       p_lines: lines,
@@ -386,13 +383,13 @@ export async function recordPayment(
     const method = z
       .enum(["transfer", "cash", "card", "other"])
       .parse(form.get("method") ?? "transfer");
-    const supabase = await createSupabaseServer();
-    const { data: invoice } = await supabase
+    const db = await createCxServer();
+    const { data: invoice } = await db
       .from("invoices")
       .select("student_id")
       .eq("id", invoiceId)
       .single();
-    const { error } = await supabase.from("payments").insert({
+    const { error } = await db.from("payments").insert({
       org_id: context.org.id,
       invoice_id: invoiceId,
       student_id: invoice?.student_id ?? null,
@@ -452,10 +449,10 @@ export async function updateSettings(
         bank_holder: emptyToNull(form.get("bankHolder")),
         course_rules: emptyToNull(form.get("courseRules")),
       });
-    const supabase = await createSupabaseServer();
+    const db = await createCxServer();
     const [orgResult, centerResult] = await Promise.all([
-      supabase.from("organizations").update(org).eq("id", context.org.id),
-      supabase.from("centers").update(center).eq("id", context.center.id),
+      db.from("organizations").update(org).eq("id", context.org.id),
+      db.from("centers").update(center).eq("id", context.center.id),
     ]);
     const error = orgResult.error ?? centerResult.error;
     if (error) return { error: error.message };

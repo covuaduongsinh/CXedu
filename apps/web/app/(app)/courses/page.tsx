@@ -5,7 +5,7 @@ import { ActionForm } from "@/components/ActionForm";
 import { LevelBadge } from "@/components/LevelBadge";
 import { Card, Empty, Field, Input, PageHeader, Select } from "@/components/ui";
 import { requireAdmin } from "@/lib/session";
-import { createSupabaseServer } from "@/lib/supabase/server";
+import { createCxServer } from "@/lib/cx/server";
 
 import { createCourse } from "../actions";
 
@@ -13,8 +13,8 @@ export const metadata: Metadata = { title: "Khóa học" };
 
 export default async function CoursesPage() {
   const context = await requireAdmin();
-  const supabase = await createSupabaseServer();
-  const { data: courses } = await supabase
+  const db = await createCxServer();
+  const { data: courses } = await db
     .from("courses")
     .select("*")
     .eq("org_id", context.org.id)

@@ -1,32 +1,45 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { PostgrestClient } from "@supabase/postgrest-js";
 import type { Database } from "@cxedu/db";
 
-export type CxClient = SupabaseClient<Database>;
+import { createRealtimeClient, type RealtimeClient } from "./realtime";
+
+/**
+ * Client dữ liệu của CX Platform: truy vấn bảng/RPC qua PostgREST (cổng `/rest/v1` của CX API)
+ * và nhận thay đổi qua `/realtime`. Dùng chung cho web (server + trình duyệt), mobile, desktop.
+ */
+export type CxClient = PostgrestClient<Database> & { realtime: RealtimeClient };
 
 export interface CxClientOptions {
-  url: string;
-  anonKey: string;
-  /** AsyncStorage/SecureStore trên mobile; mặc định localStorage trên web. */
-  storage?: {
-    getItem: (key: string) => string | null | Promise<string | null>;
-    setItem: (key: string, value: string) => void | Promise<void>;
-    removeItem: (key: string) => void | Promise<void>;
-  };
-  /** Mobile/desktop không dùng URL callback của trình duyệt. */
-  detectSessionInUrl?: boolean;
+  /** Địa chỉ CX API, ví dụ https://api.cxedu.vn hoặc http://localhost:8787. */
+  apiUrl: string;
+  /** JWT truy cập hiện tại; `null` = khách (chỉ gọi được RPC công khai như cổng phụ huynh). */
+  getAccessToken: () => Promise<string | null>;
+  /** Tắt realtime ở nơi không cần (server component). */
+  realtime?: boolean;
 }
 
-export const createCxClient = (options: CxClientOptions): CxClient =>
-  createClient<Database>(options.url, options.anonKey, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: options.detectSessionInUrl ?? true,
-      ...(options.storage ? { storage: options.storage } : {}),
-    },
-  });
+const trimSlash = (url: string) => url.replace(/\/+$/u, "");
 
-/** Lỗi Supabase → Error có thông điệp tiếng Việt từ database (RAISE EXCEPTION). */
+export const createCxClient = (options: CxClientOptions): CxClient => {
+  const apiUrl = trimSlash(options.apiUrl);
+  const authedFetch: typeof fetch = async (input, init) => {
+    const token = await options.getAccessToken();
+    const headers = new Headers(init?.headers);
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+    return fetch(input, { ...init, headers });
+  };
+  const rest = new PostgrestClient<Database>(`${apiUrl}/rest/v1`, {
+    fetch: authedFetch,
+  });
+  const realtime = createRealtimeClient({
+    url: `${apiUrl.replace(/^http/u, "ws")}/realtime`,
+    getAccessToken: options.getAccessToken,
+    enabled: options.realtime ?? true,
+  });
+  return Object.assign(rest, { realtime });
+};
+
+/** Lỗi PostgREST → Error có thông điệp tiếng Việt từ database (RAISE EXCEPTION). */
 export const unwrap = <T>(result: {
   data: T;
   error: { message: string } | null;

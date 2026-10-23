@@ -5,6 +5,7 @@ do $$
 declare
   v_owner uuid := '11111111-1111-4111-8111-111111111111';
   v_teacher uuid := '22222222-2222-4222-8222-222222222222';
+  v_password_hash text := '1e0cc0546ec1cae6e82cf713507552f6:504c9d07ef4ec917de65a87666508609d4405059b1d123724e5fe1dc7a2c1be3c3d4da45265cb45591ae9fbd42b96ff6ee271a54bc62b8caa353bf9eeee9b31e';
   v_org uuid := 'a0000000-0000-4000-8000-000000000001';
   v_center uuid := 'c0000000-0000-4000-8000-000000000001';
   v_room1 uuid := 'd0000000-0000-4000-8000-000000000001';
@@ -31,25 +32,13 @@ declare
   i int;
   k int;
 begin
-  insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
-    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
-    confirmation_token, recovery_token, email_change, email_change_token_new)
-  values
-    ('00000000-0000-0000-0000-000000000000', v_owner, 'authenticated', 'authenticated', 'thay.tuong@cxedu.local',
-     extensions.crypt('CXedu@2026', extensions.gen_salt('bf')), now(),
-     '{"provider":"email","providers":["email"]}', '{"full_name":"Thầy Tường"}', now(), now(), '', '', '', ''),
-    ('00000000-0000-0000-0000-000000000000', v_teacher, 'authenticated', 'authenticated', 'gv.lan@cxedu.local',
-     extensions.crypt('CXedu@2026', extensions.gen_salt('bf')), now(),
-     '{"provider":"email","providers":["email"]}', '{"full_name":"Cô Lan"}', now(), now(), '', '', '', '');
-
-  insert into auth.identities (id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
-  values
-    (gen_random_uuid(), v_owner::text, v_owner,
-     jsonb_build_object('sub', v_owner::text, 'email', 'thay.tuong@cxedu.local', 'email_verified', true),
-     'email', now(), now(), now()),
-    (gen_random_uuid(), v_teacher::text, v_teacher,
-     jsonb_build_object('sub', v_teacher::text, 'email', 'gv.lan@cxedu.local', 'email_verified', true),
-     'email', now(), now(), now());
+  -- Mật khẩu CXedu@2026, băm scrypt theo định dạng Better Auth (chỉ dùng local).
+  insert into auth.users ("id", "name", "email", "emailVerified") values
+    (v_owner, 'Thầy Tường', 'thay.tuong@cxedu.local', true),
+    (v_teacher, 'Cô Lan', 'gv.lan@cxedu.local', true);
+  insert into auth.accounts ("id", "accountId", "providerId", "userId", "password") values
+    (gen_random_uuid(), v_owner::text, 'credential', v_owner, v_password_hash),
+    (gen_random_uuid(), v_teacher::text, 'credential', v_teacher, v_password_hash);
 
   insert into public.organizations (id, name, phone, address, invoice_prefix, low_remaining_threshold, created_by)
   values (v_org, 'CLB Cờ vua Dương Sinh', '0983119819',

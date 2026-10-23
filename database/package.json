@@ -1,0 +1,15 @@
+{
+  "name": "@cxedu/database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "migrate": "node scripts/db.mjs migrate",
+    "seed": "node scripts/db.mjs seed",
+    "reset": "node scripts/db.mjs reset",
+    "test": "node scripts/db.mjs test"
+  },
+  "dependencies": {
+    "pg": "8.23.1"
+  }
+}

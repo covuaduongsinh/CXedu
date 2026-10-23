@@ -9,7 +9,7 @@ import {
 
 import { Badge, Card, Empty, PageHeader, buttonClass } from "@/components/ui";
 import { requireAdmin } from "@/lib/session";
-import { createSupabaseServer } from "@/lib/supabase/server";
+import { createCxServer } from "@/lib/cx/server";
 
 export const metadata: Metadata = { title: "Hóa đơn" };
 
@@ -22,8 +22,8 @@ const TONE = {
 
 export default async function InvoicesPage() {
   const context = await requireAdmin();
-  const supabase = await createSupabaseServer();
-  const { data: invoices } = await supabase
+  const db = await createCxServer();
+  const { data: invoices } = await db
     .from("invoices")
     .select(
       "id, number, issue_date, due_date, total, paid_amount, status, student:students(full_name, parent_name)",
