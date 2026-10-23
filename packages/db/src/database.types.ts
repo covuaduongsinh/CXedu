@@ -1892,7 +1892,7 @@ export type Database = {
           p_due_date?: string;
           p_lines: Json;
           p_note?: string;
-          p_student_id: string;
+          p_student_id?: string;
         };
         Returns: {
           center_id: string;

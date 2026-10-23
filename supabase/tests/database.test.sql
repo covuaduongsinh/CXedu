@@ -57,8 +57,9 @@ set local request.jwt.claims = '{"sub":"11111111-1111-4111-8111-111111111111","r
 
 create temporary table inv on commit drop as
 select * from public.create_invoice(
-  (select center_id from ids), (select student_id from ids),
-  '[{"description":"Gia hạn Cấp Tốt 16 buổi","quantity":1,"unit_price":2400000}]'::jsonb, 100000);
+  (select center_id from ids),
+  '[{"description":"Gia hạn Cấp Tốt 16 buổi","quantity":1,"unit_price":2400000}]'::jsonb,
+  (select student_id from ids), 100000);
 
 select is((select total from public.invoices where id = (select id from inv)), 2300000::bigint, 'Tổng = dòng − giảm giá');
 insert into public.payments (org_id, invoice_id, student_id, amount, method)

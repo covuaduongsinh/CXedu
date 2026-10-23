@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { chessLevelIds } from "./chessLevels.js";
+import { chessLevelIds } from "./chessLevels";
 
 const isoDate = z
   .string()

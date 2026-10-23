@@ -5,7 +5,7 @@ import {
   invoiceAmounts,
   invoiceStatus,
   transferReference,
-} from "../src/index.js";
+} from "../src/index";
 
 describe("invoice", () => {
   it("tính tổng, giảm giá, công nợ", () => {

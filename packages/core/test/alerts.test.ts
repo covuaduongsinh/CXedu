@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { hasConsecutiveAbsences, lowRemainingAlerts } from "../src/index.js";
+import { hasConsecutiveAbsences, lowRemainingAlerts } from "../src/index";
 
 describe("lowRemainingAlerts", () => {
   it("cộng buổi còn lại của các khóa có phí đang học theo từng học viên", () => {

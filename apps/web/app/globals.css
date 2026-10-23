@@ -1,0 +1,24 @@
+@import "tailwindcss";
+@import "@cxedu/ui-tokens/theme.css";
+
+@source "../../../packages/ui-tokens/src";
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
+}

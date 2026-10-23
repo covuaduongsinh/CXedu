@@ -5,7 +5,7 @@ import {
   crc16Ccitt,
   parseEmvFields,
   sanitizeTransferMessage,
-} from "../src/index.js";
+} from "../src/index";
 
 describe("crc16Ccitt", () => {
   it("khớp giá trị kiểm tra chuẩn CRC-16/CCITT-FALSE", () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { sessionCharge, summarizeEnrollment } from "../src/index.js";
+import { sessionCharge, summarizeEnrollment } from "../src/index";
 
 describe("sessionCharge", () => {
   it("trừ buổi khi đi học hoặc vắng không phép", () => {

@@ -1,4 +1,4 @@
-import { isAbsent, type AttendanceStatus } from "./attendance.js";
+import { isAbsent, type AttendanceStatus } from "./attendance";
 
 export const DEFAULT_LOW_REMAINING_THRESHOLD = 4;
 

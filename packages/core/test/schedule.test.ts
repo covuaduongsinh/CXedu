@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  expectedEndDate,
-  projectSessionDates,
-  weekdayOf,
-} from "../src/index.js";
+import { expectedEndDate, projectSessionDates, weekdayOf } from "../src/index";
 
 describe("projectSessionDates", () => {
   it("xếp buổi theo lịch T3/T5, bỏ ngày nghỉ trung tâm và bảo lưu", () => {

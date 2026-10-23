@@ -1,6 +1,6 @@
-import type { Database } from "./database.types.js";
+import type { Database } from "./database.types";
 
-export type { Database, Json } from "./database.types.js";
+export type { Database, Json } from "./database.types";
 
 type PublicSchema = Database["public"];
 

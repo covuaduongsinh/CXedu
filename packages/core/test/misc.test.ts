@@ -11,7 +11,7 @@ import {
   shiftIncome,
   studentInputSchema,
   verifyRotatingCode,
-} from "../src/index.js";
+} from "../src/index";
 
 const CENTER = "6f1c0b52-3c58-4c1a-9a43-1f0d2a7b9e10";
 

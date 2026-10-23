@@ -190,8 +190,8 @@ create trigger invoices_number before insert on public.invoices
 -- Tạo hóa đơn kèm dòng trong 1 giao dịch. p_lines: [{description, quantity, unit_price, enrollment_id?, course_id?}]
 create or replace function public.create_invoice(
   p_center_id uuid,
-  p_student_id uuid,
   p_lines jsonb,
+  p_student_id uuid default null,
   p_discount bigint default 0,
   p_due_date date default null,
   p_note text default null
@@ -239,7 +239,7 @@ begin
 end;
 $$;
 
-revoke execute on function public.create_invoice(uuid, uuid, jsonb, bigint, date, text) from anon;
+revoke execute on function public.create_invoice(uuid, jsonb, uuid, bigint, date, text) from anon;
 
 -- Webhook ngân hàng (SePay/Casso) gọi qua Edge Function bằng service role.
 create or replace function public.record_bank_transfer(

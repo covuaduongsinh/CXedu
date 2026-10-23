@@ -14,11 +14,19 @@
     "max-depth": ["warn", 4],
     "max-lines": [
       "warn",
-      { "max": 500, "skipBlankLines": true, "skipComments": true }
+      {
+        "max": 500,
+        "skipBlankLines": true,
+        "skipComments": true
+      }
     ],
     "max-lines-per-function": [
       "warn",
-      { "max": 120, "skipBlankLines": true, "skipComments": true }
+      {
+        "max": 120,
+        "skipBlankLines": true,
+        "skipComments": true
+      }
     ],
     "max-params": ["warn", 4],
     "no-var": "warn",
@@ -28,7 +36,24 @@
   "overrides": [
     {
       "files": ["**/*.test.ts", "**/*.test.tsx", "**/e2e/**"],
-      "rules": { "max-lines-per-function": "off", "max-lines": "off" }
+      "rules": {
+        "max-lines-per-function": "off",
+        "max-lines": "off"
+      }
+    },
+    {
+      "files": ["apps/*/app/**/*.tsx", "apps/web/components/**/*.tsx"],
+      "rules": {
+        "max-lines-per-function": [
+          "warn",
+          {
+            "max": 300,
+            "skipBlankLines": true,
+            "skipComments": true
+          }
+        ],
+        "complexity": ["warn", 35]
+      }
     }
   ]
 }

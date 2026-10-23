@@ -4,7 +4,7 @@ import {
   weekdayOf,
   type DateRange,
   type IsoDate,
-} from "./dates.js";
+} from "./dates";
 
 export interface ProjectionInput {
   /** Ngày bắt đầu học (tính cả ngày này nếu trùng lịch). */
