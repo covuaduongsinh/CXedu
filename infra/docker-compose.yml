@@ -1,0 +1,109 @@
+# CX Platform — chạy toàn bộ CXedu trên 1 VPS: `docker compose --env-file infra/.env -f infra/docker-compose.yml up -d --build`
+name: cxedu
+
+x-restart: &restart
+  restart: unless-stopped
+
+services:
+  db:
+    <<: *restart
+    image: postgres:17
+    environment:
+      POSTGRES_DB: cxedu
+      POSTGRES_USER: cxedu_owner
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Đặt POSTGRES_PASSWORD trong infra/.env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cxedu_owner -d cxedu"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    # Không mở cổng ra ngoài; quản trị qua `ssh -L` hoặc `docker compose exec db psql`.
+
+  migrate:
+    build: { context: .., dockerfile: infra/api.Dockerfile }
+    command: ["node", "database/scripts/db.mjs", "migrate"]
+    environment:
+      DATABASE_URL: postgres://cxedu_owner:${POSTGRES_PASSWORD}@db:5432/cxedu
+      AUTHENTICATOR_PASSWORD: ${AUTHENTICATOR_PASSWORD:?Đặt AUTHENTICATOR_PASSWORD}
+    depends_on:
+      db: { condition: service_healthy }
+    restart: "no"
+
+  rest:
+    <<: *restart
+    image: postgrest/postgrest:v16.4
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${AUTHENTICATOR_PASSWORD}@db:5432/cxedu
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET:?Đặt JWT_SECRET (≥ 32 ký tự)}
+      PGRST_JWT_AUD: authenticated
+      PGRST_SERVER_PORT: "3001"
+      PGRST_DB_CHANNEL_ENABLED: "true"
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+  api:
+    <<: *restart
+    build: { context: .., dockerfile: infra/api.Dockerfile }
+    environment:
+      DATABASE_URL: postgres://cxedu_owner:${POSTGRES_PASSWORD}@db:5432/cxedu
+      POSTGREST_URL: http://rest:3001
+      API_PUBLIC_URL: https://${API_DOMAIN}
+      AUTH_SECRET: ${AUTH_SECRET:?Đặt AUTH_SECRET (≥ 32 ký tự)}
+      JWT_SECRET: ${JWT_SECRET}
+      TRUSTED_ORIGINS: https://${APP_DOMAIN},cxedu://
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      rest: { condition: service_started }
+
+  web:
+    <<: *restart
+    build:
+      context: ..
+      dockerfile: infra/web.Dockerfile
+      args:
+        NEXT_PUBLIC_CX_API_URL: https://${API_DOMAIN}
+        NEXT_PUBLIC_APP_URL: https://${APP_DOMAIN}
+    environment:
+      CX_API_INTERNAL_URL: http://api:8787
+    depends_on:
+      api: { condition: service_healthy }
+
+  caddy:
+    <<: *restart
+    image: caddy:2
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?Đặt APP_DOMAIN, ví dụ app.cxedu.vn}
+      API_DOMAIN: ${API_DOMAIN:?Đặt API_DOMAIN, ví dụ api.cxedu.vn}
+      ACME_EMAIL: ${ACME_EMAIL:?Đặt ACME_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [web, api]
+
+  backup:
+    <<: *restart
+    image: postgres:17
+    entrypoint: ["/bin/sh", "/backup.sh"]
+    environment:
+      PGHOST: db
+      PGDATABASE: cxedu
+      PGUSER: cxedu_owner
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      BACKUP_KEEP_DAYS: "14"
+    volumes:
+      - ./backup.sh:/backup.sh:ro
+      - backups:/backups
+    depends_on:
+      db: { condition: service_healthy }
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
+  backups:

@@ -1,0 +1,14 @@
+# HTTPS tự động (Let's Encrypt) cho web và API.
+{
+	email {$ACME_EMAIL}
+}
+
+{$APP_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy web:3000
+}
+
+{$API_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy api:8787
+}

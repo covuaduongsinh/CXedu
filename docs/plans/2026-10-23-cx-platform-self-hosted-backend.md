@@ -1,6 +1,6 @@
 # Đề xuất: CX Platform — backend tự xây thay thế Supabase
 
-> Ngày 2026-10-23 · Trạng thái: **chờ Thầy duyệt** · Liên quan: `2026-10-23-cxedu-master-plan.md`
+> Ngày 2026-10-23 · Trạng thái: **đã triển khai B1–B3 + gói Compose cho B4** (xem mục 8) · Liên quan: `2026-10-23-cxedu-master-plan.md`
 
 ## 1. Bối cảnh
 
@@ -93,3 +93,31 @@ B1–B3 làm và kiểm chứng được ngay trong môi trường hiện tại 
   - Bật tự động vá hệ điều hành, tường lửa `ufw` và `fail2ban`.
   - Bí mật lưu trong biến môi trường của server, không đưa vào repo.
 - **Khối lượng chuyển đổi:** giữ nguyên SQL và chữ ký `packages/api` để giới hạn phạm vi; bộ test hiện có là thước đo hoàn thành.
+
+## 8. Kết quả triển khai (2026-10-23)
+
+Khi làm, tôi điều chỉnh một điểm so với đề xuất để giữ code tối đa: **dùng PostgREST làm API dữ liệu** thay cho viết oRPC/Drizzle. Nhờ vậy 60 truy vấn và 26 RPC/hàm trong web/mobile giữ nguyên. Các thay đổi:
+
+- **database/**
+  - Migration `0000_platform`: vai trò `anon`/`authenticated`/`service_role`/`authenticator`, schema `extensions` + `auth`, 4 bảng Better Auth (id UUID), `auth.uid()` đọc claims từ JWT.
+  - Realtime bằng trigger `pg_notify('cx_change')`.
+  - Bỏ `pg_cron`; nhắc hằng ngày do pg-boss trong API lên lịch.
+  - Công cụ `scripts/db.mjs` (migrate, seed, reset, test).
+- **apps/api (Hono):**
+  - Better Auth (email/mật khẩu, plugin bearer).
+  - `/auth/token` cấp JWT HS256 15 phút.
+  - `/rest/v1/*` chuyển tiếp tới PostgREST.
+  - `/realtime` WebSocket: kiểm quyền cơ sở, lọc sự kiện theo cơ sở/tổ chức.
+  - pg-boss lịch `0 7 * * *` giờ Việt Nam.
+- **packages/api:** `@supabase/postgrest-js` (thư viện client PostgREST độc lập, MIT) + bộ đệm JWT + realtime client tự viết. Web giữ phiên trong cookie httpOnly `cx_session`, mobile trong SecureStore.
+- **infra/:** Docker Compose gồm `postgres:17` chính chủ, PostgREST, migrate, api, web (standalone), Caddy HTTPS, backup `pg_dump` hằng đêm.
+
+**Kiểm chứng:**
+- 32 unit test.
+- 23 pgTAP trên PostgreSQL thuần (local 16, CI 16).
+- 7 Playwright E2E, gồm đăng ký trung tâm mới và đồng bộ mobile→web qua realtime mới.
+- Kiểu dữ liệu sinh lại từ database mới **giống hệt** bản cũ.
+
+**Chưa kiểm chứng trong môi trường này:**
+- Build Docker image: Docker Hub đang giới hạn lượt tải. Job `images` trong CI sẽ build.
+- Chạy thật trên VPS: cần VPS + tên miền của Thầy.

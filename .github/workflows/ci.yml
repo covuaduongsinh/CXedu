@@ -9,10 +9,15 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/cxedu
+  JWT_SECRET: ci-only-jwt-secret-0123456789abcdefghij
+  AUTH_SECRET: ci-only-auth-secret-0123456789abcdefghi
+
 jobs:
   check:
     name: Lint · typecheck · unit test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -26,21 +31,68 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
 
-  database:
-    name: Supabase migrations + pgTAP
-    runs-on: ubuntu-latest
+  platform:
+    name: Database (pgTAP) + E2E trên CX Platform
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: supabase/setup-cli@v1
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
         with:
-          version: 2.121.0
-      - run: supabase start -x studio,imgproxy,vector,logflare,supavisor,edge-runtime
-      - run: supabase db reset
-      - run: supabase test db
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: PostgreSQL + pgTAP
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-16-pgtap libtap-parser-sourcehandler-pgtap-perl
+          sudo systemctl start postgresql
+          sudo -u postgres psql -c "alter user postgres password 'postgres';"
+      - run: pnpm db:reset
+      - run: pnpm db:test
+      - name: PostgREST
+        run: |
+          docker run -d --name rest --network host \
+            -e PGRST_DB_URI=postgres://authenticator:authenticator-dev@127.0.0.1:5432/cxedu \
+            -e PGRST_DB_SCHEMAS=public -e PGRST_DB_ANON_ROLE=anon \
+            -e PGRST_JWT_SECRET=$JWT_SECRET -e PGRST_JWT_AUD=authenticated \
+            -e PGRST_SERVER_PORT=3001 postgrest/postgrest:v16.4
+      - name: CX API
+        run: nohup pnpm --filter @cxedu/api-server start > api.log 2>&1 &
+      - name: Build web + mobile web
+        env:
+          NEXT_PUBLIC_CX_API_URL: http://localhost:8787
+          EXPO_PUBLIC_CX_API_URL: http://localhost:8787
+        run: |
+          pnpm --filter @cxedu/web build
+          pnpm --filter @cxedu/mobile export:web
+      - run: pnpm --filter @cxedu/web exec playwright install --with-deps chromium
+      - name: E2E
+        env:
+          NEXT_PUBLIC_CX_API_URL: http://localhost:8787
+          E2E_MOBILE_URL: http://localhost:8081
+          E2E_DATABASE_URL: ${{ env.DATABASE_URL }}
+        run: |
+          npx --yes serve@14 -s apps/mobile/dist -l 8081 > mobile.log 2>&1 &
+          pnpm e2e
+      - if: failure()
+        run: tail -100 api.log
+
+  images:
+    name: Docker images (api, web)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f infra/api.Dockerfile -t cxedu-api .
+      - run: >
+          docker build -f infra/web.Dockerfile
+          --build-arg NEXT_PUBLIC_CX_API_URL=https://api.example.vn
+          --build-arg NEXT_PUBLIC_APP_URL=https://app.example.vn
+          -t cxedu-web .
 
   desktop:
     name: Tauri cargo check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev

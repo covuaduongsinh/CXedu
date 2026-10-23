@@ -9,14 +9,14 @@
 | Khảo sát Seny bằng REA | Danh mục 30+ màn hình, 47 bảng, quy tắc nghiệp vụ | REA `analyze-javascript-application` (125 file, 0 lỗi parse); đăng nhập dashboard **chưa thành công** (sai mật khẩu) |
 | Monorepo | pnpm + Turborepo, TS 7, oxlint/oxfmt, Vitest 5, Husky | `pnpm check` xanh |
 | Nghiệp vụ `packages/core` | Trừ buổi + hạn mức vắng có phép, sắp hết buổi, vắng liên tiếp, lịch dự kiến, VietQR EMVCo/CRC16, mã QR xoay 45s (khớp SQL), lương GV, schema Zod | 27 unit test |
-| Database | 5 migration, RLS đa trung tâm theo vai trò, RPC `mark_attendance`/`create_invoice`/`teacher_checkin`/`get_parent_portal`/`record_bank_transfer`, view cảnh báo, pg_cron nhắc 7:00, audit log, Realtime | 23 pgTAP test |
+| Database | 6 migration (gồm `0000_platform`), RLS đa trung tâm theo vai trò, RPC `mark_attendance`/`create_invoice`/`teacher_checkin`/`get_parent_portal`/`record_bank_transfer`, view cảnh báo, pg_cron nhắc 7:00, audit log, Realtime | 23 pgTAP test |
 | Web | Tổng quan, Điểm danh, Học viên, Hồ sơ HV, Tái đăng ký, Hóa đơn VietQR (in/PDF), Khóa học, Lớp & lịch, Kiosk QR, Cài đặt, Cổng phụ huynh, Landing | 5 Playwright E2E |
 | Mobile | Đăng nhập, điểm danh hôm nay (hook dùng chung + Realtime), quét QR check-in | typecheck + `expo export --platform web` + E2E đồng bộ mobile→web |
 | Desktop | Tauri 2: cửa sổ chính, lệnh `open_kiosk` toàn màn hình, plugin notification/opener, icon thương hiệu | `cargo check` + `tauri build --debug`, chạy thử trên Xvfb |
 
 ## 2. Việc cần Thầy quyết / cung cấp
 
-1. **Tạo Supabase cloud project + Vercel project** (có thể phát sinh phí). Khi Thầy đồng ý, tôi đẩy migration và cấu hình domain, ví dụ `app.cxedu.vn`.
+1. **Hạ tầng (cập nhật):** đã chuyển sang CX Platform tự host, không dùng Supabase/Vercel (xem `2026-10-23-cx-platform-self-hosted-backend.md`). Cần **VPS + tên miền** để chạy `infra/docker-compose.yml`.
 2. **Tài khoản Seny:** mật khẩu đã cung cấp bị từ chối. Nếu tài khoản đăng nhập bằng Google, chạy REA trên máy Thầy theo `tools/rea/README.md`. Nên đổi mật khẩu Seny vì nó đã xuất hiện trong chat.
 3. **Khóa tích hợp:** Zalo OA + mẫu ZNS, SePay/Casso (webhook ngân hàng), Resend (email), tài khoản Expo/EAS, Apple Developer, Google Play.
 4. Tên thương mại và domain chính thức (tạm dùng "CXedu").

@@ -1,0 +1,13 @@
+**/node_modules
+**/.next
+**/.expo
+**/dist
+**/.turbo
+**/test-results
+**/playwright-report
+apps/desktop/src-tauri/target
+apps/desktop/src-tauri/gen
+.git
+**/.env
+**/.env.*
+!**/.env.example

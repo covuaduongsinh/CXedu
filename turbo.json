@@ -11,8 +11,8 @@
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
       "env": [
-        "NEXT_PUBLIC_SUPABASE_URL",
-        "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+        "NEXT_PUBLIC_CX_API_URL",
+        "CX_API_INTERNAL_URL",
         "NEXT_PUBLIC_APP_URL"
       ]
     },
