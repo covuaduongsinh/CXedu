@@ -1,0 +1,17 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 80,
+  "sortImports": false,
+  "sortPackageJson": false,
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "**/.next/**",
+    "**/dist/**",
+    "**/.expo/**",
+    "**/src-tauri/target/**",
+    "**/src-tauri/gen/**",
+    "pnpm-lock.yaml",
+    "supabase/.temp/**",
+    "docs/**"
+  ]
+}

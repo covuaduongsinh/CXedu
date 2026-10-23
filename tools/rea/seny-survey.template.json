@@ -39,14 +39,25 @@
       "action": "click",
       "locator": { "kind": "role", "role": "button", "name": "Đăng nhập" }
     },
-    { "step_id": "after_login", "action": "wait_for_timeout", "duration_ms": 8000 },
+    {
+      "step_id": "after_login",
+      "action": "wait_for_timeout",
+      "duration_ms": 8000
+    },
     {
       "step_id": "dashboard",
       "action": "goto",
       "destination": { "url": "https://senyapp.com/dashboard" },
       "wait_until": "load"
     },
-    { "step_id": "dashboard_settle", "action": "wait_for_timeout", "duration_ms": 5000 }
+    {
+      "step_id": "dashboard_settle",
+      "action": "wait_for_timeout",
+      "duration_ms": 5000
+    }
   ],
-  "capture": { "after_each_step": ["url"], "at_end": ["accessibility", "screenshot", "url"] }
+  "capture": {
+    "after_each_step": ["url"],
+    "at_end": ["accessibility", "screenshot", "url"]
+  }
 }
