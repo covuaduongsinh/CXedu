@@ -1,0 +1,52 @@
+{
+  "browser": {
+    "mode": "connect",
+    "cdp_endpoint": "http://127.0.0.1:9333",
+    "target_id": "<PAGE_TARGET_ID from http://127.0.0.1:9333/json/list>"
+  },
+  "start_url": { "url": "https://senyapp.com/auth" },
+  "environment": {
+    "locale": "vi-VN",
+    "timezone": "Asia/Ho_Chi_Minh",
+    "viewport": { "width": 1366, "height": 900, "device_scale_factor": 1 }
+  },
+  "secrets": [
+    { "secret_id": "seny_email", "environment_variable": "SENY_EMAIL" },
+    { "secret_id": "seny_password", "environment_variable": "SENY_PASSWORD" }
+  ],
+  "actions": [
+    {
+      "step_id": "email_ready",
+      "action": "wait_for",
+      "locator": { "kind": "role", "role": "textbox", "name": "Email" },
+      "state": "visible",
+      "timeout_ms": 20000
+    },
+    {
+      "step_id": "fill_email",
+      "action": "fill",
+      "locator": { "kind": "role", "role": "textbox", "name": "Email" },
+      "value": { "source": "secret", "secret_id": "seny_email" }
+    },
+    {
+      "step_id": "fill_password",
+      "action": "fill",
+      "locator": { "kind": "role", "role": "textbox", "name": "Mật khẩu" },
+      "value": { "source": "secret", "secret_id": "seny_password" }
+    },
+    {
+      "step_id": "submit",
+      "action": "click",
+      "locator": { "kind": "role", "role": "button", "name": "Đăng nhập" }
+    },
+    { "step_id": "after_login", "action": "wait_for_timeout", "duration_ms": 8000 },
+    {
+      "step_id": "dashboard",
+      "action": "goto",
+      "destination": { "url": "https://senyapp.com/dashboard" },
+      "wait_until": "load"
+    },
+    { "step_id": "dashboard_settle", "action": "wait_for_timeout", "duration_ms": 5000 }
+  ],
+  "capture": { "after_each_step": ["url"], "at_end": ["accessibility", "screenshot", "url"] }
+}
