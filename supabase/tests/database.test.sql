@@ -1,7 +1,7 @@
 -- pgTAP: phân quyền đa tenant, quy tắc trừ buổi, hóa đơn, cổng phụ huynh, check-in QR.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(20);
+select plan(23);
 
 -- Người dùng của một trung tâm khác.
 insert into auth.users (id, email, aud, role) values
@@ -11,8 +11,15 @@ create temporary table ids on commit drop as
 select
   (select e.id from public.enrollments e join public.students s on s.id = e.student_id where s.full_name = 'Trần Gia Bảo') as enrollment_id,
   (select id from public.students where full_name = 'Trần Gia Bảo') as student_id,
-  'c0000000-0000-4000-8000-000000000001'::uuid as center_id;
+  'c0000000-0000-4000-8000-000000000001'::uuid as center_id,
+  (select count(*) from public.students where center_id = 'c0000000-0000-4000-8000-000000000001')::int as center_students;
 grant select on ids to authenticated, anon;
+
+-- Mã QR hiện tại (now() cố định trong transaction nên khớp với lúc teacher_checkin chạy).
+create temporary table checkin_code on commit drop as
+select public.rotating_code(checkin_secret, center_id, floor(extract(epoch from now()) / 45)::bigint) as code
+from public.center_secrets where center_id = 'c0000000-0000-4000-8000-000000000001';
+grant select on checkin_code to authenticated;
 
 -- ---------------------------------------------------------------- người lạ
 set local role authenticated;
@@ -32,7 +39,7 @@ select is((select status::text from public.subscriptions), 'trialing', 'Tổ ch�
 -- ---------------------------------------------------------------- giáo viên
 set local request.jwt.claims = '{"sub":"22222222-2222-4222-8222-222222222222","role":"authenticated"}';
 
-select is((select count(*) from public.students)::int, 12, 'Giáo viên thấy học viên cơ sở mình');
+select is((select count(*) from public.students)::int, (select center_students from ids), 'Giáo viên thấy toàn bộ học viên cơ sở mình');
 select is((select count(*) from public.invoices)::int, 0, 'Giáo viên không xem được hóa đơn');
 select throws_ok(
   $$ insert into public.courses (org_id, name, total_lessons) values ('a0000000-0000-4000-8000-000000000001', 'Khóa lạ', 10) $$,
@@ -51,6 +58,16 @@ select is((select public.mark_attendance((select enrollment_id from ids), curren
 select is((select public.mark_attendance((select enrollment_id from ids), current_date + 1, 'unexcused')).charged::int,
   1, 'Sửa điểm danh không cộng dồn buổi');
 select is((select used_lessons from public.enrollments where id = (select enrollment_id from ids)), 8, 'Tổng đã dùng = 8');
+
+select throws_ok(
+  $$ select public.teacher_checkin((select center_id from ids), '0000000000000000') $$,
+  '22023', null, 'Mã QR sai/hết hạn bị từ chối');
+select lives_ok(
+  $$ select public.teacher_checkin((select center_id from ids), (select code from checkin_code)) $$,
+  'Giáo viên check-in bằng mã QR hiện tại');
+select throws_ok(
+  $$ select public.current_checkin_code((select center_id from ids)) $$,
+  '42501', null, 'Giáo viên không mở được màn hình mã QR của lễ tân');
 
 -- ---------------------------------------------------------------- owner: hóa đơn + thanh toán
 set local request.jwt.claims = '{"sub":"11111111-1111-4111-8111-111111111111","role":"authenticated"}';

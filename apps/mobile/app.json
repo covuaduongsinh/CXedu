@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "CXedu",
+    "slug": "cxedu",
+    "scheme": "cxedu",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "vn.duongsinh.cxedu"
+    },
+    "android": {
+      "package": "vn.duongsinh.cxedu",
+      "adaptiveIcon": {
+        "backgroundColor": "#2B3990",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "CXedu cần camera để quét mã QR check-in ca dạy tại lễ tân."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}

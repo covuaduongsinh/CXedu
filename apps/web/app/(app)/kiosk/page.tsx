@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { requireAdmin } from "@/lib/session";
 
+import { DesktopKioskButton } from "./DesktopKioskButton";
 import { KioskQr } from "./KioskQr";
 
 export const metadata: Metadata = { title: "QR check-in" };
@@ -17,6 +18,7 @@ export default async function KioskPage() {
         check-in ca dạy.
       </p>
       <KioskQr centerId={context.center.id} />
+      <DesktopKioskButton />
     </div>
   );
 }

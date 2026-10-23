@@ -1,0 +1,15 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Quyền cho web app CXedu chạy trong cửa sổ desktop",
+  "windows": ["main", "kiosk"],
+  "remote": {
+    "urls": ["https://*.cxedu.vn", "http://localhost:3000"]
+  },
+  "permissions": [
+    "core:default",
+    "notification:default",
+    "opener:default",
+    "allow-open-kiosk"
+  ]
+}

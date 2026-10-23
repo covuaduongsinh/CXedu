@@ -115,6 +115,15 @@ export const useRealtimeSync = (
   const queryClient = useQueryClient();
   useEffect(() => {
     if (!centerId) return;
+    const refresh = () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["today-sessions", centerId],
+      });
+      if (orgId)
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.dashboard(orgId),
+        });
+    };
     const channel = client
       .channel(`center:${centerId}`)
       .on(
@@ -125,26 +134,18 @@ export const useRealtimeSync = (
           table: "attendance",
           filter: `center_id=eq.${centerId}`,
         },
-        () => {
-          void queryClient.invalidateQueries({
-            queryKey: ["today-sessions", centerId],
-          });
-          if (orgId)
-            void queryClient.invalidateQueries({
-              queryKey: queryKeys.dashboard(orgId),
-            });
-        },
+        refresh,
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "enrollments" },
-        () => {
-          void queryClient.invalidateQueries({
-            queryKey: ["today-sessions", centerId],
-          });
-        },
+        refresh,
       )
-      .subscribe();
+      // Thay đổi xảy ra giữa lần tải đầu và lúc kênh sẵn sàng sẽ không có sự kiện:
+      // tải lại một lần khi đã đăng ký xong (và sau mỗi lần kết nối lại) để bắt kịp.
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") refresh();
+      });
     return () => {
       void client.removeChannel(channel);
     };

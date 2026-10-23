@@ -42,7 +42,11 @@
       }
     },
     {
-      "files": ["apps/*/app/**/*.tsx", "apps/web/components/**/*.tsx"],
+      "files": [
+        "apps/*/app/**/*.tsx",
+        "apps/web/components/**/*.tsx",
+        "apps/*/src/app/**/*.tsx"
+      ],
       "rules": {
         "max-lines-per-function": [
           "warn",

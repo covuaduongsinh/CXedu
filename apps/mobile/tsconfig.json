@@ -1,0 +1,8 @@
+{
+  "extends": "@cxedu/config/tsconfig.react.json",
+  "compilerOptions": {
+    "types": [],
+    "paths": { "@/*": ["./src/*"] }
+  },
+  "include": ["src", "expo-env.d.ts"]
+}

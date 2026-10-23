@@ -31,6 +31,17 @@ describe("rotating check-in code", () => {
     );
   });
 
+  it("khớp với hàm SQL public.rotating_code (cùng secret, cơ sở, chu kỳ)", async () => {
+    // select public.rotating_code('secret', '<CENTER>', 123) → 4153a545034199f3
+    const { code, counter } = await rotatingCode(
+      "secret",
+      CENTER,
+      123 * 45_000 + 10,
+    );
+    expect(counter).toBe(123);
+    expect(code).toBe("4153a545034199f3");
+  });
+
   it("đóng gói và đọc nội dung QR", () => {
     const payload = checkinQrPayload(CENTER, "0123456789abcdef");
     expect(parseCheckinQrPayload(payload)).toEqual({
